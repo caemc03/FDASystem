@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบตรวจสอบสถานประกอบการ - อย.</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary:#0B3D91; --primary-light:#1A52B0; --primary-dark:#072A6A;
+  --accent:#C8102E; --accent-soft:#FDECEA;
+  --ad:#7B2FBE; --ad-light:#9B4FDE;
+  --gold:#B8860B;
+  --bg:#F0F3FA; --surface:#FFFFFF; --surface2:#F8F9FD;
+  --border:#D0D8EC; --text:#1A1F36; --text-muted:#6B7A99;
+  --success:#0D7C3A; --success-bg:#E8F5EE;
+  --shadow:0 2px 12px rgba(11,61,145,0.08);
+  --radius:10px;
+  --sidebar:240px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;display:flex;flex-direction:column;min-height:100vh;}
+
+/* ===== LOGIN ===== */
+#loginOverlay{position:fixed;inset:0;z-index:9000;background:linear-gradient(135deg,var(--primary-dark) 0%,#0C3580 50%,#5B1E9C 100%);display:flex;align-items:center;justify-content:center;}
+#loginOverlay.hidden{display:none;}
+.login-box{background:white;border-radius:20px;padding:40px 36px;width:380px;max-width:95vw;box-shadow:0 30px 80px rgba(0,0,0,.35);}
+.login-logo{text-align:center;margin-bottom:24px;}
+.login-logo-icon{width:64px;height:64px;background:linear-gradient(135deg,var(--primary),var(--ad));border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:10px;box-shadow:0 8px 24px rgba(11,61,145,.3);}
+.login-logo h2{font-size:17px;font-weight:800;color:var(--primary);line-height:1.3;}
+.login-logo p{font-size:11px;color:var(--text-muted);margin-top:3px;}
+.login-field{margin-bottom:14px;}
+.login-field label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+.login-field input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);font-family:'Sarabun',sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
+.login-field input:focus{border-color:var(--primary);}
+.login-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--primary),var(--ad));color:white;border:none;border-radius:var(--radius);font-family:'Sarabun',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;box-shadow:0 4px 16px rgba(11,61,145,.3);transition:opacity .2s;}
+.login-btn:hover{opacity:.9;}
+.login-btn:disabled{opacity:.6;cursor:not-allowed;}
+.login-error{color:var(--accent);font-size:12px;text-align:center;margin-top:10px;min-height:18px;}
+.login-footer{text-align:center;margin-top:20px;font-size:11px;color:var(--text-muted);}
+.user-chip{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 12px 4px 8px;font-size:12px;font-weight:600;cursor:pointer;transition:background .2s;}
+.user-chip:hover{background:rgba(255,255,255,.25);}
+
+.topbar{background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:white;height:56px;display:flex;align-items:center;padding:0 20px;gap:14px;position:fixed;top:0;left:0;right:0;z-index:300;box-shadow:0 2px 12px rgba(11,61,145,0.3);}
+.topbar-logo{width:38px;height:38px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:1.5px solid rgba(255,255,255,0.3);flex-shrink:0;}
+.topbar-title{font-family:'IBM Plex Sans Thai',sans-serif;}
+.topbar-title h1{font-size:15px;font-weight:700;letter-spacing:.02em;}
+.topbar-title p{font-size:10px;opacity:.6;font-weight:300;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.topbar-badge{background:var(--accent);color:white;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;}
+.menu-toggle{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:7px;color:white;padding:6px 10px;cursor:pointer;font-size:16px;display:none;}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:var(--sidebar);background:linear-gradient(180deg,var(--primary-dark) 0%,#0C3580 60%,#0F3D8C 100%);color:white;position:fixed;top:56px;left:0;bottom:0;z-index:250;display:flex;flex-direction:column;overflow-y:auto;transition:transform .25s ease;}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);}
+
+.sidebar-brand{padding:20px 16px 12px;}
+.sidebar-brand-title{font-size:13px;font-weight:700;opacity:.9;line-height:1.4;}
+.sidebar-brand-sub{font-size:10px;opacity:.5;margin-top:2px;}
+
+.sidebar-section-label{padding:14px 16px 6px;font-size:10px;font-weight:700;opacity:.45;text-transform:uppercase;letter-spacing:.1em;}
+
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border-radius:0;transition:all .15s;color:rgba(255,255,255,.7);font-size:13.5px;font-weight:500;border:none;background:none;width:100%;text-align:left;position:relative;}
+.nav-item:hover{background:rgba(255,255,255,.08);color:white;}
+.nav-item.active{background:rgba(255,255,255,.15);color:white;font-weight:700;}
+.nav-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#FFD700;border-radius:0 2px 2px 0;}
+.nav-item .nav-icon{font-size:16px;width:22px;text-align:center;flex-shrink:0;}
+.nav-item .nav-badge{margin-left:auto;background:var(--accent);color:white;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;}
+.nav-item .nav-badge.purple{background:var(--ad);}
+
+.sidebar-divider{height:1px;background:rgba(255,255,255,.08);margin:8px 16px;}
+
+/* ===== MAIN CONTENT ===== */
+.main{margin-left:var(--sidebar);margin-top:56px;flex:1;min-height:calc(100vh - 56px);}
+.page{display:none;padding:24px 28px 60px;}
+.page.active{display:block;}
+
+/* ===== SECTIONS ===== */
+.section{background:var(--surface);border-radius:14px;margin-bottom:18px;box-shadow:var(--shadow);border:1px solid var(--border);}
+.section-header{background:linear-gradient(90deg,var(--primary),var(--primary-light));color:white;padding:12px 20px;display:flex;align-items:center;gap:10px;border-radius:13px 13px 0 0;}
+.section-header.ad-header{background:linear-gradient(90deg,#5B1E9C,var(--ad));}
+.section-icon{width:28px;height:28px;background:rgba(255,255,255,.2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.section-title{font-weight:700;font-size:14px;letter-spacing:.02em;}
+.section-num{margin-left:auto;font-size:11px;opacity:.65;}
+.section-body{padding:20px;overflow:visible;}
+
+/* ===== PAGE HEADER ===== */
+.page-header{margin-bottom:20px;}
+.page-header h2{font-family:'IBM Plex Sans Thai',sans-serif;font-size:20px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:10px;}
+.page-header p{font-size:13px;color:var(--text-muted);margin-top:4px;}
+
+/* ===== GRID ===== */
+.grid{display:grid;gap:14px;}
+.g2{grid-template-columns:1fr 1fr;} .g3{grid-template-columns:1fr 1fr 1fr;} .g4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.span2{grid-column:span 2;} .span3{grid-column:span 3;}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr;}.span2,.span3{grid-column:span 1;}}
+
+/* ===== FIELDS ===== */
+.field{display:flex;flex-direction:column;gap:5px;}
+label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;}
+label .req{color:var(--accent);margin-left:2px;}
+input[type="text"],input[type="date"],input[type="number"],select,textarea{font-family:'Sarabun',sans-serif;font-size:14px;color:var(--text);background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);padding:9px 13px;transition:all .2s;width:100%;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(11,61,145,.08);}
+input[readonly]{background:#EEF2FF;color:var(--primary);font-weight:600;cursor:default;}
+textarea{resize:vertical;min-height:80px;}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236B7A99' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;}
+
+/* ===== ID DISPLAY ===== */
+.id-display{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#EEF2FF,#E8EEFF);border:1.5px solid #C5CFEE;border-radius:var(--radius);padding:9px 14px;}
+.id-val{font-family:'IBM Plex Sans Thai',monospace;font-weight:700;font-size:15px;color:var(--primary);letter-spacing:.04em;}
+.id-label{font-size:10px;color:var(--text-muted);}
+
+/* ===== CHECKBOX PILLS ===== */
+.checkbox-group{display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);}
+.checkbox-item{display:flex;align-items:center;gap:7px;cursor:pointer;padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:white;transition:all .15s;font-size:13px;user-select:none;}
+.checkbox-item:hover{border-color:var(--primary);background:#F0F4FF;}
+.checkbox-item input[type="checkbox"]{width:14px;height:14px;accent-color:var(--primary);}
+.checkbox-item.checked{background:linear-gradient(135deg,#EEF2FF,#E0E8FF);border-color:var(--primary);color:var(--primary);font-weight:600;}
+
+/* ===== MULTI-SELECT ===== */
+.multiselect-wrap{position:relative;}
+.multiselect-display{min-height:42px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);padding:7px 36px 7px 10px;cursor:pointer;display:flex;flex-wrap:wrap;gap:5px;align-items:center;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236B7A99' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;transition:border-color .2s;}
+.multiselect-display.open{border-color:var(--primary);background-color:#fff;box-shadow:0 0 0 3px rgba(11,61,145,.08);}
+.multiselect-placeholder{color:var(--text-muted);font-size:14px;}
+.ms-tag{background:linear-gradient(135deg,#EEF2FF,#E0E8FF);border:1px solid #C5CFEE;color:var(--primary);font-size:12px;font-weight:600;padding:2px 8px;border-radius:12px;display:flex;align-items:center;gap:4px;}
+.ms-remove{cursor:pointer;font-size:14px;line-height:1;opacity:.6;}
+.ms-remove:hover{opacity:1;}
+.multiselect-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:500;background:white;border:1.5px solid var(--primary);border-radius:var(--radius);box-shadow:0 8px 24px rgba(11,61,145,.15);max-height:280px;overflow-y:auto;}
+.multiselect-dropdown.open{display:block;}
+.ms-group-label{padding:8px 14px 4px;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;background:var(--surface2);border-top:1px solid var(--border);}
+.ms-group-label:first-child{border-top:none;}
+.ms-option{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:13px;transition:background .1s;}
+.ms-option:hover{background:#F0F4FF;}
+.ms-option.selected{background:#EEF2FF;color:var(--primary);font-weight:600;}
+.ms-option input[type="checkbox"]{width:14px;height:14px;accent-color:var(--primary);flex-shrink:0;}
+
+/* ===== EVIDENCE TABLE ===== */
+.evidence-table{width:100%;border-collapse:collapse;}
+.evidence-table th{background:linear-gradient(90deg,#0B3D91,#1A52B0);color:white;padding:10px 12px;text-align:center;font-size:12px;font-weight:600;white-space:nowrap;}
+.evidence-table th:first-child{border-radius:8px 0 0 0;}.evidence-table th:last-child{border-radius:0 8px 0 0;}
+.evidence-table td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle;}
+.evidence-table input{text-align:right;width:100%;min-width:80px;}
+
+/* ===== RADIO ===== */
+.radio-group{display:flex;gap:10px;flex-wrap:wrap;}
+.radio-option{display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:var(--radius);border:1.5px solid var(--border);cursor:pointer;font-size:14px;font-weight:500;transition:all .15s;user-select:none;}
+.radio-option input{accent-color:var(--primary);width:16px;height:16px;}
+.radio-option:hover{border-color:var(--primary);background:#F0F4FF;}
+.radio-option.sel-found{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+.radio-option.sel-notfound{border-color:var(--success);background:var(--success-bg);color:var(--success);}
+.radio-option.sel-active{border-color:var(--primary);background:#EEF2FF;color:var(--primary);}
+.found-products{display:none;margin-top:14px;overflow:visible;}
+.found-products.show{display:block;overflow:visible;}
+
+/* ===== LAW LOOKUP ===== */
+.law-search-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+.law-search-input{flex:1;font-family:'Sarabun',sans-serif;font-size:14px;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius);outline:none;background:var(--surface2);transition:all .2s;}
+.law-search-input:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(11,61,145,.08);}
+.law-search-btn{padding:8px 14px;background:var(--primary);color:white;border:none;border-radius:var(--radius);cursor:pointer;font-size:14px;font-weight:700;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.law-search-btn:hover{background:var(--primary-light);}
+.law-search-btn:disabled{opacity:.5;cursor:not-allowed;}
+.law-result-box{background:#F8FAFF;border:1.5px solid #C5D0EC;border-radius:var(--radius);padding:0;overflow:hidden;}
+.law-result-item{border-bottom:1px solid #E0E8F5;padding:12px 14px;}
+.law-result-item:last-child{border-bottom:none;}
+.law-result-num{font-size:12px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+.law-result-text{font-size:13.5px;line-height:1.7;color:var(--text);}
+.law-result-penalty{margin-top:8px;padding:8px 12px;background:#FFF8E1;border-left:3px solid var(--gold);border-radius:0 6px 6px 0;font-size:12.5px;color:#5C4200;}
+.law-loading{display:flex;align-items:center;gap:10px;padding:14px;color:var(--text-muted);font-size:13px;}
+.law-loading-spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+.law-error{padding:12px 14px;color:var(--accent);font-size:13px;background:#FFF5F5;}
+.law-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.law-tag{font-size:11px;background:#EEF2FF;color:var(--primary);border:1px solid #C5CFEE;border-radius:8px;padding:2px 8px;font-weight:600;cursor:pointer;}
+.law-tag:hover{background:var(--primary);color:white;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.law-card{border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;}
+.law-card-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);cursor:pointer;user-select:none;transition:background .15s;}
+.law-card-header:hover{background:#EEF2FF;}
+.law-card-header .law-toggle{margin-left:auto;font-size:18px;color:var(--text-muted);transition:transform .2s;}
+.law-card-header.active{background:#EEF2FF;}
+.law-card-header.active .law-toggle{transform:rotate(180deg);}
+.law-name{font-weight:600;font-size:13px;color:var(--primary);}
+.law-badge{font-size:10px;background:var(--primary);color:white;padding:2px 8px;border-radius:10px;font-weight:600;}
+.law-card-body{display:none;padding:14px;border-top:1px solid var(--border);}
+.law-card-body.open{display:block;}
+
+/* ===== FILE UPLOAD ===== */
+.file-upload{border:2px dashed var(--border);border-radius:var(--radius);padding:16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2);position:relative;}
+.file-upload:hover{border-color:var(--primary);background:#F0F4FF;}
+.file-upload.required-upload{border-color:var(--accent);background:#FFF5F5;}
+.file-upload.has-file{border-color:var(--success);border-style:solid;background:var(--success-bg);}
+.file-upload input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;}
+.file-upload-icon{font-size:26px;margin-bottom:4px;}
+.file-upload-text{font-size:13px;color:var(--text-muted);}
+.file-upload-text strong{color:var(--primary);}
+.file-name{margin-top:6px;font-size:12px;color:var(--success);font-weight:600;display:none;}
+.file-required-hint{font-size:11px;color:var(--accent);margin-top:4px;font-weight:600;}
+
+/* ===== AD STYLES ===== */
+.ad-option{display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:var(--radius);border:1.5px solid var(--border);cursor:pointer;font-size:14px;font-weight:500;transition:all .15s;user-select:none;}
+.ad-option input{accent-color:var(--ad);width:16px;height:16px;}
+.ad-option:hover{border-color:var(--ad);background:#F5EEFF;}
+.ad-option.sel{border-color:var(--ad);background:#F0E6FF;color:var(--ad);font-weight:700;}
+.ad-result-wrap{display:none;margin-top:14px;}
+.ad-result-wrap.show{display:block;}
+.platform-tag-group{display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);}
+.platform-tag{display:flex;align-items:center;gap:7px;cursor:pointer;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:white;transition:all .15s;font-size:13px;user-select:none;}
+.platform-tag:hover{border-color:var(--ad);background:#F5EEFF;}
+.platform-tag input[type="checkbox"]{width:14px;height:14px;accent-color:var(--ad);}
+.platform-tag.checked{background:linear-gradient(135deg,#F0E6FF,#E8D6FF);border-color:var(--ad);color:var(--ad);font-weight:600;}
+
+/* ===== SEARCH PAGE ===== */
+.search-bar-wrap{background:var(--surface);border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:var(--shadow);border:1px solid var(--border);}
+.search-input-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.search-input-row .field{flex:1;min-width:160px;}
+.search-btn{padding:9px 22px;background:var(--primary);color:white;border:none;border-radius:var(--radius);font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;}
+.search-btn:hover{background:var(--primary-light);}
+.search-result-table{width:100%;border-collapse:collapse;}
+.search-result-table th{background:linear-gradient(90deg,var(--primary),var(--primary-light));color:white;padding:10px 12px;text-align:left;font-size:12px;font-weight:600;white-space:nowrap;}
+.search-result-table th:first-child{border-radius:8px 0 0 0;}.search-result-table th:last-child{border-radius:0 8px 0 0;}
+.search-result-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.search-result-table tr:hover td{background:#F5F8FF;}
+.result-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 10px;border-radius:10px;}
+.result-badge.found{background:var(--accent-soft);color:var(--accent);}
+.result-badge.notfound{background:var(--success-bg);color:var(--success);}
+.result-actions{display:flex;gap:6px;}
+.btn-sm{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:none;font-family:'Sarabun',sans-serif;}
+.btn-view{background:#EEF2FF;color:var(--primary);}
+.btn-edit{background:#FFF8E1;color:var(--gold);}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted);}
+.empty-state .empty-icon{font-size:48px;margin-bottom:12px;}
+.empty-state p{font-size:14px;}
+
+/* ===== API KEY BAR ===== */
+.apikey-bar{background:linear-gradient(90deg,#1a1a2e,#16213e);color:white;padding:8px 20px 8px calc(var(--sidebar) + 20px);display:flex;align-items:center;gap:10px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.08);position:fixed;top:56px;left:0;right:0;z-index:200;height:40px;}
+.apikey-bar label{opacity:.6;white-space:nowrap;font-weight:600;letter-spacing:.03em;}
+.apikey-input{flex:1;max-width:380px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:white;padding:5px 10px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;}
+.apikey-input::placeholder{opacity:.35;}
+.apikey-input:focus{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.12);}
+.apikey-status{font-size:11px;opacity:.7;white-space:nowrap;}
+.apikey-status.ok{color:#4ade80;}
+.apikey-status.err{color:#f87171;}
+@media(max-width:768px){.apikey-bar{padding-left:16px;}}
+
+/* ===== LAW SAVED LIST ===== */
+.law-saved-list{margin-top:18px;border-top:2px dashed var(--border);padding-top:16px;display:none;}
+.law-saved-list.has-items{display:block;}
+.law-saved-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.law-saved-title{font-size:13px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:7px;}
+.law-saved-clear{font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600;padding:4px 8px;border-radius:6px;border:1px solid #FFD0D0;background:#FFF5F5;}
+.law-saved-clear:hover{background:#FFE0E0;}
+.law-saved-item{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;position:relative;}
+.law-saved-item:last-child{margin-bottom:0;}
+.law-saved-item-law{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+.law-saved-item-section{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:4px;}
+.law-saved-item-content{font-size:13px;line-height:1.65;color:var(--text);}
+.law-saved-item-penalty{margin-top:7px;font-size:12px;background:#FFF8E1;border-left:3px solid var(--gold);padding:6px 10px;border-radius:0 6px 6px 0;color:#5C4200;}
+.law-save-btn{display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:5px 12px;background:var(--primary);color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;transition:all .15s;}
+.law-save-btn:hover{background:var(--primary-light);}
+.law-save-btn.saved{background:var(--success);cursor:default;}
+.law-edit-btn{background:none;border:none;cursor:pointer;font-size:14px;opacity:.45;padding:2px 5px;border-radius:4px;}
+.law-edit-btn:hover{opacity:1;background:#EEF2FF;}
+.law-delete-btn{position:static;background:none;border:none;cursor:pointer;font-size:16px;opacity:.4;padding:2px 6px;border-radius:4px;}
+.law-delete-btn:hover{opacity:1;background:#FFE0E0;}
+
+/* ===== PDF LAW UPLOAD ===== */
+.pdf-law-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);transition:border-color .2s;}
+.pdf-law-row.has-pdf{border-color:var(--success);background:var(--success-bg);}
+.pdf-law-badge{font-size:10px;font-weight:700;color:white;padding:3px 10px;border-radius:8px;flex-shrink:0;white-space:nowrap;}
+.pdf-law-name{font-size:13px;font-weight:600;color:var(--text);flex:1;}
+.pdf-law-status{font-size:11px;color:var(--text-muted);white-space:nowrap;}
+.pdf-law-status.ok{color:var(--success);font-weight:700;}
+.pdf-upload-btn{position:relative;overflow:hidden;padding:7px 14px;border:1.5px solid var(--primary);border-radius:7px;background:white;color:var(--primary);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'Sarabun',sans-serif;}
+.pdf-upload-btn:hover{background:#EEF2FF;}
+.pdf-upload-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0;}
+.pdf-remove-btn{padding:5px 10px;background:none;border:1px solid #FFD0D0;border-radius:6px;color:var(--accent);font-size:12px;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600;flex-shrink:0;}
+.pdf-remove-btn:hover{background:#FFF5F5;}
+
+/* ===== MANUAL LAW ENTRY ===== */
+.law-manual-input-row{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start;}
+.law-manual-input-row input{font-family:'Sarabun',sans-serif;font-size:13px;padding:8px 11px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);outline:none;transition:border-color .2s;}
+.law-manual-input-row input:focus{border-color:var(--primary);background:#fff;}
+.law-manual-sec{width:130px;flex-shrink:0;}
+.law-manual-penalty{flex:1;}
+.law-manual-save-btn{padding:8px 14px;background:var(--primary);color:white;border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'Sarabun',sans-serif;transition:all .15s;}
+.law-manual-save-btn:hover{background:var(--primary-light);}
+.law-history-wrap{position:relative;}
+.law-history-dropdown{display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:400;background:white;border:1.5px solid var(--primary);border-radius:var(--radius);box-shadow:0 6px 20px rgba(11,61,145,.15);max-height:200px;overflow-y:auto;}
+.law-history-dropdown.open{display:block;}
+.law-history-item{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);}
+.law-history-item:last-child{border-bottom:none;}
+.law-history-item:hover{background:#F0F4FF;}
+.law-history-item strong{color:var(--primary);}
+.law-history-item span{color:var(--text-muted);font-size:12px;}
+
+/* ===== MISC ===== */
+.divider{height:1px;background:var(--border);margin:16px 0;}
+.info-note{background:#FFF8E1;border-left:4px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;color:#5C4200;margin-bottom:14px;}
+.alert-box{background:#FFF0F0;border:1.5px solid var(--accent);border-radius:var(--radius);padding:12px 16px;font-size:13px;color:#8B0000;font-weight:600;display:none;margin-bottom:16px;}
+.alert-box.show{display:flex;align-items:center;gap:10px;}
+
+/* ===== BUTTONS ===== */
+.form-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap;}
+.btn{font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;padding:10px 26px;border-radius:var(--radius);border:none;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .2s;}
+.btn-outline{background:white;color:var(--text-muted);border:1.5px solid var(--border);}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary);background:#F0F4FF;}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;box-shadow:0 4px 14px rgba(11,61,145,.2);}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(11,61,145,.3);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.page.active .section{animation:fadeIn .25s ease both;}
+.page.active .section:nth-child(2){animation-delay:.05s}
+.page.active .section:nth-child(3){animation-delay:.10s}
+.page.active .section:nth-child(4){animation-delay:.15s}
+.page.active .section:nth-child(5){animation-delay:.20s}
+.page.active .section:nth-child(6){animation-delay:.25s}
+.page.active .section:nth-child(7){animation-delay:.30s}
+.page.active .section:nth-child(8){animation-delay:.35s}
+
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);} .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;} .menu-toggle{display:block;}
+  .page{padding:16px 14px 60px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">⚕️</div>
+      <h2>ระบบฐานข้อมูล ฝ่ายปราบปราม ศรป.</h2>
+      <p>สำนักงานคณะกรรมการอาหารและยา (อย.)</p>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;border-bottom:2px solid var(--border);margin-bottom:20px;">
+      <button id="tabLogin" onclick="switchLoginTab('login')"
+        style="flex:1;padding:9px;background:none;border:none;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px;cursor:pointer;">
+        🔐 เข้าสู่ระบบ
+      </button>
+      <button id="tabRegister" onclick="switchLoginTab('register')"
+        style="flex:1;padding:9px;background:none;border:none;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">
+        📝 สมัครใช้งาน
+      </button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="panelLogin">
+      <div class="login-field">
+        <label>ชื่อผู้ใช้</label>
+        <input type="text" id="loginUser" placeholder="กรอกชื่อผู้ใช้" autocomplete="username"
+          onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+      </div>
+      <div class="login-field">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="loginPass" placeholder="กรอกรหัสผ่าน" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="login-btn" onclick="doLogin()" id="loginBtn">🔐 เข้าสู่ระบบ</button>
+      <div class="login-error" id="loginError"></div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="panelRegister" style="display:none;">
+      <div class="login-field">
+        <label>ชื่อ-นามสกุล</label>
+        <input type="text" id="regName" placeholder="ชื่อ-นามสกุล"
+          onkeydown="if(event.key==='Enter')document.getElementById('regEmail').focus()">
+      </div>
+      <div class="login-field">
+        <label>อีเมล</label>
+        <input type="email" id="regEmail" placeholder="example@fda.moph.go.th"
+          onkeydown="if(event.key==='Enter')document.getElementById('regUser').focus()">
+      </div>
+      <div class="login-field">
+        <label>ชื่อผู้ใช้</label>
+        <input type="text" id="regUser" placeholder="ตั้งชื่อผู้ใช้ (ภาษาอังกฤษ/ตัวเลข)"
+          onkeydown="if(event.key==='Enter')document.getElementById('regPass').focus()">
+      </div>
+      <div class="login-field">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="regPass" placeholder="ตั้งรหัสผ่าน (อย่างน้อย 4 ตัว)"
+          onkeydown="if(event.key==='Enter')document.getElementById('regPass2').focus()">
+      </div>
+      <div class="login-field">
+        <label>ยืนยันรหัสผ่าน</label>
+        <input type="password" id="regPass2" placeholder="กรอกรหัสผ่านอีกครั้ง"
+          onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <button class="login-btn" onclick="doRegister()" id="regBtn" style="background:linear-gradient(135deg,#0D7C3A,#16A058);">
+        📝 สมัครใช้งาน
+      </button>
+      <div class="login-error" id="regError"></div>
+    </div>
+
+    <div class="login-footer">
+      🔒 ระบบนี้สงวนสำหรับเจ้าหน้าที่ที่ได้รับอนุญาตเท่านั้น<br>
+      <span style="color:#aaa;font-size:10px;margin-top:4px;display:block;">v2.0 — FDA Inspection &amp; Ad Suspension System</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="mainApp" style="display:none;">
+
+<!-- ===== TOP BAR ===== -->
+<div class="topbar">
+  <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+  <div class="topbar-logo">⚕️</div>
+  <div class="topbar-title">
+    <h1>ระบบตรวจสอบสถานประกอบการ</h1>
+    <p>สำนักงานคณะกรรมการอาหารและยา (อย.) — ฝ่ายปราบปราม ศรป.</p>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-badge" id="topbarBadge">NEW RECORD</div>
+    <div class="user-chip" onclick="doLogout()" title="คลิกเพื่อออกจากระบบ">
+      <span style="font-size:16px;">👤</span>
+      <span id="userChipName">ผู้ใช้งาน</span>
+      <span style="font-size:10px;opacity:.6;">| ออกจากระบบ</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== SIDEBAR ===== -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-title">ระบบตรวจสอบ<br>สถานประกอบการ</div>
+    <div class="sidebar-brand-sub">ฝ่ายปราบปราม ศรป.</div>
+  </div>
+
+  <div class="sidebar-section-label">เมนูหลัก</div>
+
+  <button class="nav-item" id="nav-dashboard" onclick="switchPage('dashboard')">
+    <span class="nav-icon">📊</span> Dashboard
+  </button>
+  <button class="nav-item active" id="nav-inspection" onclick="switchPage('inspection')">
+    <span class="nav-icon">🏢</span> ภาพรวมการตรวจ
+  </button>
+  <button class="nav-item" id="nav-ad" onclick="switchPage('ad')">
+    <span class="nav-icon">📵</span> การระงับโฆษณา
+    <span class="nav-badge purple">NEW</span>
+  </button>
+  <button class="nav-item" id="nav-lab" onclick="switchPage('lab')">
+    <span class="nav-icon">🧪</span> ระบบผลวิเคราะห์
+    <span class="nav-badge" style="background:#0D7C3A;">NEW</span>
+  </button>
+  <button class="nav-item" id="nav-search" onclick="switchPage('search')">
+    <span class="nav-icon">🔎</span> ค้นหาข้อมูล
+  </button>
+
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section-label">การจัดการ</div>
+
+  <button class="nav-item" id="nav-settings" onclick="switchPage('settings')">
+    <span class="nav-icon">⚙️</span> ตั้งค่าระบบ
+    <span class="nav-badge" id="settingsKeyBadge" style="display:none;background:#f59e0b">🔑</span>
+  </button>
+</div>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="main">
+
+<!-- ========================= PAGE: Dashboard ========================= -->
+<div class="page" id="page-dashboard">
+  <div class="page-header">
+    <h2>📊 Dashboard</h2>
+    <p>ภาพรวมการตรวจสอบสถานประกอบการและการระงับโฆษณา</p>
+  </div>
+
+  <!-- Filter bar -->
+  <!-- Filter bar -->
+  <div id="db-filter-bar" style="background:white;border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;box-shadow:var(--shadow);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:12px;font-weight:700;color:var(--text-muted);">📅 ปีงบประมาณ</span>
+      <select id="db-year-filter" onchange="renderDashboard()"
+        style="font-family:'Sarabun',sans-serif;font-size:13px;padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);outline:none;cursor:pointer;">
+        <option value="">ทั้งหมด</option>
+      </select>
+    </div>
+    <div style="width:1px;background:var(--border);height:28px;"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button id="db-mode-all" onclick="setDbMode('all')"
+        style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--primary);background:var(--primary);color:white;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
+        📋 ผลงานรวม
+      </button>
+      <button id="db-mode-insp" onclick="setDbMode('insp')"
+        style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;cursor:pointer;">
+        🏢 ตรวจสถานประกอบการ
+      </button>
+      <button id="db-mode-ad" onclick="setDbMode('ad')"
+        style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;cursor:pointer;">
+        📵 ระงับโฆษณา
+      </button>
+      <button id="db-mode-lab" onclick="setDbMode('lab')"
+        style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;cursor:pointer;">
+        🧪 ผลวิเคราะห์
+      </button>
+    </div>
+    <div style="margin-left:auto;">
+      <button onclick="printDashboard()"
+        style="padding:7px 18px;background:var(--primary);color:white;border:none;border-radius:var(--radius);font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">
+        🖨️ พิมพ์
+      </button>
+    </div>
+  </div>
+<div id="db-main-content">
+
+  <!-- Stats row -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;">
+    <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));border-radius:14px;padding:20px;color:white;box-shadow:0 4px 16px rgba(11,61,145,.2);">
+      <div style="font-size:11px;opacity:.7;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">บันทึกการตรวจทั้งหมด</div>
+      <div style="font-size:36px;font-weight:800;margin:8px 0;" id="db-total-insp-static">0</div>
+      <div style="font-size:11px;opacity:.6;">🏢 สถานประกอบการ</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#C8102E,#E03050);border-radius:14px;padding:20px;color:white;box-shadow:0 4px 16px rgba(200,16,46,.2);">
+      <div style="font-size:11px;opacity:.7;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">พบความผิด</div>
+      <div style="font-size:36px;font-weight:800;margin:8px 0;" id="db-found-static">0</div>
+      <div style="font-size:11px;opacity:.6;">⚠️ คดี</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#0D7C3A,#16A058);border-radius:14px;padding:20px;color:white;box-shadow:0 4px 16px rgba(13,124,58,.2);">
+      <div style="font-size:11px;opacity:.7;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">ไม่พบความผิด</div>
+      <div style="font-size:36px;font-weight:800;margin:8px 0;" id="db-clear-static">0</div>
+      <div style="font-size:11px;opacity:.6;">✅ คดี</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#5B1E9C,var(--ad));border-radius:14px;padding:20px;color:white;box-shadow:0 4px 16px rgba(123,47,190,.2);">
+      <div style="font-size:11px;opacity:.7;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">ระงับโฆษณา</div>
+      <div style="font-size:36px;font-weight:800;margin:8px 0;" id="db-ad-static">0</div>
+      <div style="font-size:11px;opacity:.6;">📵 รายการ</div>
+    </div>
+  </div>
+
+  <!-- Row 1: ผลิตภัณฑ์หลัก + ประเด็นความเสี่ยง -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;">
+    <div class="section" style="margin-bottom:0;">
+      <div class="section-header"><div class="section-icon">💊</div><span class="section-title">ผลิตภัณฑ์ประเด็นหลัก</span></div>
+      <div class="section-body"><canvas id="chart-product" height="200"></canvas></div>
+    </div>
+    <div class="section" style="margin-bottom:0;">
+      <div class="section-header"><div class="section-icon">⚠️</div><span class="section-title">ประเด็นความเสี่ยง (ต้นเรื่อง)</span></div>
+      <div class="section-body"><canvas id="chart-risk" height="200"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 2: ประเภทสถานที่ -->
+  <div style="margin-bottom:18px;">
+    <div class="section" style="margin-bottom:0;">
+      <div class="section-header"><div class="section-icon">📍</div><span class="section-title">ประเภทสถานที่ + มีไว้เพื่อ</span></div>
+      <div class="section-body">
+        <div id="db-place-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: มูลค่าของกลาง -->
+  <div class="section">
+    <div class="section-header"><div class="section-icon">💰</div><span class="section-title">มูลค่าของกลาง</span></div>
+    <div class="section-body">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;" id="db-evidence-grid">
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;border:1.5px solid var(--border);">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:700;margin-bottom:6px;">ยึด (รายการ)</div>
+          <div style="font-size:20px;font-weight:800;color:var(--primary);" id="db-seized-items">0</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;border:1.5px solid var(--border);">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:700;margin-bottom:6px;">ยึด (ชิ้น)</div>
+          <div style="font-size:20px;font-weight:800;color:var(--primary);" id="db-seized-pieces">0</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;border:1.5px solid var(--border);">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:700;margin-bottom:6px;">อายัด (รายการ)</div>
+          <div style="font-size:20px;font-weight:800;color:#E67E22;" id="db-attached-items">0</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;border:1.5px solid var(--border);">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:700;margin-bottom:6px;">อายัด (ชิ้น)</div>
+          <div style="font-size:20px;font-weight:800;color:#E67E22;" id="db-attached-pieces">0</div>
+        </div>
+        <div style="background:#FFF8E1;border-radius:10px;padding:14px;text-align:center;border:1.5px solid #F0D060;">
+          <div style="font-size:10px;color:var(--gold);font-weight:700;margin-bottom:6px;">มูลค่ายึด (฿)</div>
+          <div style="font-size:18px;font-weight:800;color:var(--gold);" id="db-val-seized">0</div>
+        </div>
+        <div style="background:#FFF8E1;border-radius:10px;padding:14px;text-align:center;border:1.5px solid #F0D060;">
+          <div style="font-size:10px;color:var(--gold);font-weight:700;margin-bottom:6px;">มูลค่าอายัด (฿)</div>
+          <div style="font-size:18px;font-weight:800;color:var(--gold);" id="db-val-attached">0</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#FFF0D0,#FFE8B0);border-radius:10px;padding:14px;text-align:center;border:1.5px solid #E0B840;">
+          <div style="font-size:10px;color:var(--gold);font-weight:700;margin-bottom:6px;">รวมมูลค่า (฿)</div>
+          <div style="font-size:18px;font-weight:800;color:var(--gold);" id="db-val-total">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: มาตราความผิด + การแถลงข่าว -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;">
+    <div class="section" style="margin-bottom:0;">
+      <div class="section-header"><div class="section-icon">⚖️</div><span class="section-title">มาตราความผิดตาม พ.ร.บ.</span></div>
+      <div class="section-body"><canvas id="chart-law" height="200"></canvas></div>
+    </div>
+    <div class="section" style="margin-bottom:0;">
+      <div class="section-header"><div class="section-icon">📰</div><span class="section-title">การแถลงข่าว / ประชาสัมพันธ์</span></div>
+      <div class="section-body">
+        <div style="display:flex;flex-direction:column;gap:10px;" id="db-press-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADC Dashboard (shown when showAd checked) -->
+  <div id="db-adc-section" style="display:none;">
+    <div style="font-size:13px;font-weight:700;color:var(--ad);margin-bottom:12px;padding-left:4px;border-left:4px solid var(--ad);padding-left:12px;">
+      📵 สถิติการระงับโฆษณา
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;">
+      <div class="section" style="margin-bottom:0;">
+        <div class="section-header ad-header"><div class="section-icon">🔗</div><span class="section-title">URL / แพลตฟอร์ม</span></div>
+        <div class="section-body">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">จำนวนที่ระงับตาม URL</div>
+          <div id="db-adc-url" style="font-size:28px;font-weight:800;color:var(--ad);margin-bottom:14px;">0 <span style="font-size:13px;font-weight:400;color:var(--text-muted);">รายการ</span></div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">แยกตามแพลตฟอร์ม</div>
+          <div id="db-adc-platform" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+      </div>
+      <div class="section" style="margin-bottom:0;">
+        <div class="section-header ad-header"><div class="section-icon">💊</div><span class="section-title">ผลิตภัณฑ์ที่พบ</span></div>
+        <div class="section-body">
+          <div id="db-adc-product" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+      <div class="section" style="margin-bottom:0;">
+        <div class="section-header ad-header"><div class="section-icon">💰</div><span class="section-title">การเปรียบเทียบปรับ</span></div>
+        <div class="section-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+            <div style="background:#E8F5EE;border-radius:10px;padding:12px;text-align:center;border:1.5px solid #90CFA8;">
+              <div style="font-size:10px;color:var(--success);font-weight:700;margin-bottom:4px;">มาชำระ</div>
+              <div style="font-size:24px;font-weight:800;color:var(--success);" id="db-fine-paid">0</div>
+            </div>
+            <div style="background:#FFF0F0;border-radius:10px;padding:12px;text-align:center;border:1.5px solid #FFB0B0;">
+              <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:4px;">ยังไม่มา</div>
+              <div style="font-size:24px;font-weight:800;color:var(--accent);" id="db-fine-unpaid">0</div>
+            </div>
+            <div style="background:#FFF8E1;border-radius:10px;padding:12px;text-align:center;border:1.5px solid #F0D060;">
+              <div style="font-size:10px;color:var(--gold);font-weight:700;margin-bottom:4px;">รวมเงิน (฿)</div>
+              <div style="font-size:18px;font-weight:800;color:var(--gold);" id="db-fine-total">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section" style="margin-bottom:0;">
+        <div class="section-header ad-header"><div class="section-icon">⚖️</div><span class="section-title">มาตราความผิด (โฆษณา) แยก พ.ร.บ.</span></div>
+        <div class="section-body">
+          <div id="db-adc-law" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- end db-main-content -->
+</div>
+
+<!-- ========================= PAGE: การตรวจสอบสถานประกอบการ ========================= -->
+<div class="page active" id="page-inspection">
+  <div class="page-header">
+    <h2>🏢 ภาพรวมการตรวจสอบสถานประกอบการ</h2>
+    <p>บันทึกข้อมูลการตรวจสอบสถานประกอบการด้านผลิตภัณฑ์สุขภาพ</p>
+  </div>
+
+  <!-- SECTION 1: ข้อมูลทั่วไป -->
+  <div class="section">
+    <div class="section-header"><div class="section-icon">📋</div><span class="section-title">ข้อมูลทั่วไป</span><span class="section-num">ส่วนที่ 1</span></div>
+    <div class="section-body">
+      <div class="grid g4">
+        <div class="field"><label>ปีงบประมาณ <span class="req">*</span></label><select id="fiscalYear" onchange="updateId()"><option value="">-- เลือกปี --</option></select></div>
+        <div class="field"><label>ต้นเรื่อง <span class="req">*</span></label>
+          <select id="source" onchange="handleSourceChange()">
+            <option value="">-- เลือกต้นเรื่อง --</option>
+            <option>เรื่องร้องเรียน</option><option>ประสานด้วยวาจา</option><option>กองผลิตภัณฑ์</option><option>ประเด็นร้อน</option>
+          </select>
+        </div>
+        <div class="field"><label>เลขรับ <span id="recNumHint" style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">(ร. / สธ)</span></label><input type="text" placeholder="เช่น ร.12345"></div>
+      </div>
+
+      <div class="grid g3" style="margin-top:14px">
+        <div class="field"><label>ลงวันที่ (เลขรับ)</label><input type="date"></div>
+        <div class="field span2">
+          <label>ประเด็นความเสี่ยง (ต้นเรื่อง) <span style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">เลือกได้หลายรายการ</span></label>
+          <div class="multiselect-wrap" id="riskWrap">
+            <div class="multiselect-display" id="riskDisplay" tabindex="0" onclick="toggleMS('risk')" onkeydown="if(event.key==='Enter'||event.key===' ')toggleMS('risk')">
+              <span class="multiselect-placeholder" id="riskPlaceholder">-- เลือกประเด็นความเสี่ยง --</span>
+            </div>
+            <div class="multiselect-dropdown" id="riskDropdown">
+              <div class="ms-group-label">🔴 ยา</div>
+              <label class="ms-option"><input type="checkbox" value="ยาชุดลดน้ำหนัก/ความอ้วน" onchange="updateMS('risk')"> ยาชุดลดน้ำหนัก/ความอ้วน</label>
+              <label class="ms-option"><input type="checkbox" value="ยาชุด" onchange="updateMS('risk')"> ยาชุด</label>
+              <label class="ms-option"><input type="checkbox" value="ยาสเตียรอยด์" onchange="updateMS('risk')"> ยาสเตียรอยด์</label>
+              <label class="ms-option"><input type="checkbox" value="ยาแก้แพ้/แก้ไอ/ทรามาดอล" onchange="updateMS('risk')"> ยาแก้แพ้/แก้ไอ/ทรามาดอล</label>
+              <label class="ms-option"><input type="checkbox" value="ยาเสริมสมรรถภาพทางเพศ" onchange="updateMS('risk')"> ยาเสริมสมรรถภาพทางเพศ</label>
+              <label class="ms-option"><input type="checkbox" value="โบท็อกซ์" onchange="updateMS('risk')"> โบท็อกซ์</label>
+              <label class="ms-option"><input type="checkbox" value="ยาปลอม" onchange="updateMS('risk')"> ยาปลอม</label>
+              <label class="ms-option"><input type="checkbox" value="ยาไม่มีทะเบียน" onchange="updateMS('risk')"> ยาไม่มีทะเบียน</label>
+              <div class="ms-group-label">🟠 อาหาร</div>
+              <label class="ms-option"><input type="checkbox" value="อาหารลดน้ำหนัก/ความอ้วน" onchange="updateMS('risk')"> อาหารลดน้ำหนัก/ความอ้วน</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารผิวขาว" onchange="updateMS('risk')"> อาหารผิวขาว</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารเสริมสมรรถภาพทางเพศ" onchange="updateMS('risk')"> อาหารเสริมสมรรถภาพทางเพศ</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารรักษาโรค" onchange="updateMS('risk')"> อาหารรักษาโรค</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารไม่มีเลขสารบบอาหาร" onchange="updateMS('risk')"> อาหารไม่มีเลขสารบบอาหาร</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารไม่บริสุทธิ์" onchange="updateMS('risk')"> อาหารไม่บริสุทธิ์</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารปลอม" onchange="updateMS('risk')"> อาหารปลอม</label>
+              <div class="ms-group-label">🟡 เครื่องสำอาง</div>
+              <label class="ms-option"><input type="checkbox" value="เครื่องสำอางใส่สารห้ามใช้" onchange="updateMS('risk')"> เครื่องสำอางใส่สารห้ามใช้</label>
+              <label class="ms-option"><input type="checkbox" value="เครื่องสำอางใช้ผิดวัตถุประสงค์" onchange="updateMS('risk')"> เครื่องสำอางใช้ผิดวัตถุประสงค์</label>
+              <label class="ms-option"><input type="checkbox" value="เครื่องสำอางไม่จดแจ้ง" onchange="updateMS('risk')"> เครื่องสำอางไม่จดแจ้ง</label>
+              <label class="ms-option"><input type="checkbox" value="เครื่องสำอางปลอม" onchange="updateMS('risk')"> เครื่องสำอางปลอม</label>
+              <div class="ms-group-label">🟢 สมุนไพร / เครื่องมือแพทย์</div>
+              <label class="ms-option"><input type="checkbox" value="สมุนไพรปลอมปนยาแผนปัจจุบัน" onchange="updateMS('risk')"> สมุนไพรปลอมปนยาแผนปัจจุบัน</label>
+              <label class="ms-option"><input type="checkbox" value="สมุนไพรปลอม" onchange="updateMS('risk')"> สมุนไพรปลอม</label>
+              <label class="ms-option"><input type="checkbox" value="สมุนไพรไม่ขึ้นทะเบียน" onchange="updateMS('risk')"> สมุนไพรไม่ขึ้นทะเบียน</label>
+              <label class="ms-option"><input type="checkbox" value="ฟิลเลอร์" onchange="updateMS('risk')"> ฟิลเลอร์</label>
+              <label class="ms-option"><input type="checkbox" value="เครื่องมือแพทย์ปลอม" onchange="updateMS('risk')"> เครื่องมือแพทย์ปลอม</label>
+              <label class="ms-option"><input type="checkbox" value="เครื่องมือแพทย์ไม่ขึ้นทะเบียน" onchange="updateMS('risk')"> เครื่องมือแพทย์ไม่ขึ้นทะเบียน</label>
+              <div class="ms-group-label">⚫ วัตถุอันตราย / วัตถุออกฤทธิ์ / เสพติด</div>
+              <label class="ms-option"><input type="checkbox" value="วัตถุอันตราย ชนิดที่ 1" onchange="updateMS('risk')"> วัตถุอันตราย ชนิดที่ 1</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุอันตราย ชนิดที่ 2" onchange="updateMS('risk')"> วัตถุอันตราย ชนิดที่ 2</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุอันตราย ชนิดที่ 3" onchange="updateMS('risk')"> วัตถุอันตราย ชนิดที่ 3</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุอันตราย ชนิดที่ 4" onchange="updateMS('risk')"> วัตถุอันตราย ชนิดที่ 4</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุออกฤทธิ์ในประเภท 1" onchange="updateMS('risk')"> วัตถุออกฤทธิ์ในประเภท 1</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุออกฤทธิ์ในประเภท 2" onchange="updateMS('risk')"> วัตถุออกฤทธิ์ในประเภท 2</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุออกฤทธิ์ในประเภท 3" onchange="updateMS('risk')"> วัตถุออกฤทธิ์ในประเภท 3</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุออกฤทธิ์ในประเภท 4" onchange="updateMS('risk')"> วัตถุออกฤทธิ์ในประเภท 4</label>
+              <label class="ms-option"><input type="checkbox" value="ยาเสพติด" onchange="updateMS('risk')"> ยาเสพติด</label>
+              <label class="ms-option"><input type="checkbox" value="ปลอมลิขสิทธิ์/เครื่องหมายการค้า" onchange="updateMS('risk')"> ปลอมลิขสิทธิ์/เครื่องหมายการค้า</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="riskspacer" style="height:0;"></div>
+
+      <div class="field" style="margin-top:14px">
+        <label>ผลิตภัณฑ์ประเด็นหลัก <span class="req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">เลือกได้หลายรายการ</span></label>
+        <div class="checkbox-group">
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="mainprod" value="ยา"> 💊 ยา</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="mainprod" value="อาหาร"> 🍱 อาหาร</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="mainprod" value="เครื่องสำอาง"> 💄 เครื่องสำอาง</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="mainprod" value="เครื่องมือแพทย์"> 🩺 เครื่องมือแพทย์</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="mainprod" value="ผลิตภัณฑ์สมุนไพร"> 🌿 ผลิตภัณฑ์สมุนไพร</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="mainprod" value="วัตถุอันตราย"> ☣️ วัตถุอันตราย</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="mainprod" value="วัตถุออกฤทธิ์"> ⚗️ วัตถุออกฤทธิ์</label>
+        </div>
+      </div>
+
+      <div class="grid g2" style="margin-top:14px">
+        <div class="field"><label>วันที่ตรวจ <span class="req">*</span></label><input type="date"></div>
+        <div class="field"></div>
+      </div>
+      <div class="field" style="margin-top:14px">
+        <label>กองที่ร่วมตรวจสอบ</label>
+        <div class="checkbox-group">
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="division" value="อาหาร"> อาหาร</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="division" value="ยา"> ยา</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="division" value="เครื่องสำอาง"> เครื่องสำอาง</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="division" value="เครื่องมือแพทย์"> เครื่องมือแพทย์</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="division" value="ผลิตภัณฑ์สมุนไพร"> ผลิตภัณฑ์สมุนไพร</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="division" value="วัตถุอันตราย"> วัตถุอันตราย</label>
+          <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="division" value="วัตถุเสพติด"> วัตถุเสพติด</label>
+        </div>
+      </div>
+      <div class="grid g2" style="margin-top:14px">
+        <div class="field">
+          <label>ลิงก์บันทึกตรวจ (PDF) <span class="req">*</span></label>
+          <div class="file-upload required-upload" id="uploadWrap" onclick="this.querySelector('input').click()">
+            <input type="file" accept=".pdf" id="inspectionFile" onchange="handleFileUpload(this)">
+            <div class="file-upload-icon">📄</div>
+            <div class="file-upload-text"><strong>คลิกเพื่ออัพโหลด</strong> หรือลากไฟล์มาวาง</div>
+            <div class="file-upload-text" style="margin-top:2px">PDF เท่านั้น</div>
+            <div class="file-name" id="file1name"></div>
+          </div>
+          <div class="file-required-hint" id="fileRequiredHint">⚠️ กรุณาอัพโหลดบันทึกการตรวจก่อนบันทึกข้อมูล</div>
+        </div>
+        <div class="field"><label>Keyword ต้นเรื่อง</label><textarea placeholder="ใส่คำสำคัญที่เกี่ยวข้อง เช่น ยาผิดกฎหมาย, เว็บขายยา..."></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: ข้อมูลสถานที่ -->
+  <div class="section">
+    <div class="section-header"><div class="section-icon">📍</div><span class="section-title">ข้อมูลสถานที่</span><span class="section-num">ส่วนที่ 2</span></div>
+    <div class="section-body">
+      <div class="grid g3">
+        <div class="field"><label>ประเภทสถานที่ <span class="req">*</span></label>
+          <select>
+            <option value="">-- เลือกประเภท --</option>
+            <option>บ้าน/ที่พักอาศัย</option>
+            <option>อาคารพาณิชย์</option>
+            <option>โกดัง</option>
+            <option>อาคารสำนักงาน</option>
+            <option>ห้างสรรพสินค้า</option>
+            <option>ร้านค้า</option>
+            <option>โรงงาน</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>มีไว้เพื่อ <span style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">เลือกได้หลายรายการ</span></label>
+          <div class="multiselect-wrap" id="purposeWrap">
+            <div class="multiselect-display" id="purposeDisplay" tabindex="0" onclick="toggleMS('purpose')" onkeydown="if(event.key==='Enter'||event.key===' ')toggleMS('purpose')">
+              <span class="multiselect-placeholder" id="purposePlaceholder">-- เลือกวัตถุประสงค์ --</span>
+            </div>
+            <div class="multiselect-dropdown" id="purposeDropdown">
+              <label class="ms-option"><input type="checkbox" value="ผลิต" onchange="updateMS('purpose')"> ผลิต</label>
+              <label class="ms-option"><input type="checkbox" value="ขาย/จำหน่าย" onchange="updateMS('purpose')"> ขาย/จำหน่าย</label>
+              <label class="ms-option"><input type="checkbox" value="นำเข้า" onchange="updateMS('purpose')"> นำเข้า</label>
+              <label class="ms-option"><input type="checkbox" value="เก็บ" onchange="updateMS('purpose')"> เก็บ</label>
+            </div>
+          </div>
+        </div>
+        <div class="field"><label>ชื่ออาคาร / บริษัท</label><input type="text" placeholder="ชื่ออาคารหรือบริษัท"></div>
+      </div>
+      <div id="purposespacer" style="height:0;"></div>
+      <div class="grid g4" style="margin-top:14px">
+        <div class="field"><label>บ้านเลขที่</label><input type="text" placeholder="บ้านเลขที่"></div>
+        <div class="field"><label>หมู่บ้าน</label><input type="text" placeholder="ชื่อหมู่บ้าน"></div>
+        <div class="field"><label>ชั้น</label><input type="text" placeholder="ชั้นที่"></div>
+        <div class="field"><label>ห้องเลขที่</label><input type="text" placeholder="ห้องเลขที่"></div>
+        <div class="field"><label>หมู่ที่</label><input type="text" placeholder="หมู่ที่"></div>
+        <div class="field"><label>ซอย</label><input type="text" placeholder="ซอย"></div>
+        <div class="field"><label>ถนน</label><input type="text" placeholder="ถนน"></div>
+        <div class="field"><label>แขวง / ตำบล</label><input type="text" placeholder="แขวง/ตำบล"></div>
+        <div class="field"><label>เขต / อำเภอ</label><input type="text" placeholder="เขต/อำเภอ"></div>
+        <div class="field"><label>จังหวัด</label><input type="text" placeholder="จังหวัด"></div>
+      </div>
+      <div class="field" style="margin-top:14px"><label>พิกัด GPS</label><input type="text" placeholder="เช่น 13.7563° N, 100.5018° E"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: ผู้ต้องหา -->
+  <div class="section">
+    <div class="section-header"><div class="section-icon">👤</div><span class="section-title">ข้อมูลผู้ต้องหา / ผู้เกี่ยวข้อง</span><span class="section-num">ส่วนที่ 3</span></div>
+    <div class="section-body">
+      <div class="grid g4">
+        <div class="field"><label>คำนำหน้านาม</label>
+          <select><option value="">-- เลือก --</option><option>นาย</option><option>นางสาว</option><option>นาง</option><option>Mr.</option><option>Mrs.</option><option>Ms.</option></select>
+        </div>
+        <div class="field span2"><label>ชื่อ</label><input type="text" placeholder="ชื่อ"></div>
+        <div class="field"><label>นามสกุล</label><input type="text" placeholder="นามสกุล"></div>
+      </div>
+      <div class="field" style="margin-top:14px"><label>เลขบัตรประชาชน / Passport</label><input type="text" placeholder="X XXXX XXXXX XX X" maxlength="17"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: ผลการตรวจ -->
+  <div class="section">
+    <div class="section-header"><div class="section-icon">🔍</div><span class="section-title">ผลการตรวจ</span><span class="section-num">ส่วนที่ 4</span></div>
+    <div class="section-body">
+      <div class="grid g2">
+        <div class="field">
+          <label>ผลการตรวจ <span class="req">*</span></label>
+          <div class="radio-group" style="flex-direction:column;gap:8px;">
+            <label class="radio-option" id="opt-found" onclick="setInspResult('found')"><input type="radio" name="inspResult" value="พบความผิด"> ⚠️ พบความผิด</label>
+            <label class="radio-option" id="opt-notfound" onclick="setInspResult('notfound')"><input type="radio" name="inspResult" value="ไม่พบความผิด"> ✅ ไม่พบความผิด</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>ประเภทความเสี่ยง <span style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">เลือกได้หลายรายการ</span></label>
+          <div class="multiselect-wrap" id="riskTypeWrap">
+            <div class="multiselect-display" id="riskTypeDisplay" tabindex="0" onclick="toggleMS('riskType')" onkeydown="if(event.key==='Enter'||event.key===' ')toggleMS('riskType')">
+              <span class="multiselect-placeholder" id="riskTypePlaceholder">-- เลือกประเภทความเสี่ยง --</span>
+            </div>
+            <div class="multiselect-dropdown" id="riskTypeDropdown" style="max-height:220px;">
+              <div class="ms-group-label">🔴 ยา</div>
+              <label class="ms-option"><input type="checkbox" value="ยาชุดลดน้ำหนัก/ความอ้วน" onchange="updateMS('riskType')"> ยาชุดลดน้ำหนัก/ความอ้วน</label>
+              <label class="ms-option"><input type="checkbox" value="ยาชุด" onchange="updateMS('riskType')"> ยาชุด</label>
+              <label class="ms-option"><input type="checkbox" value="ยาสเตียรอยด์" onchange="updateMS('riskType')"> ยาสเตียรอยด์</label>
+              <label class="ms-option"><input type="checkbox" value="ยาแก้แพ้/แก้ไอ/ทรามาดอล" onchange="updateMS('riskType')"> ยาแก้แพ้/แก้ไอ/ทรามาดอล</label>
+              <label class="ms-option"><input type="checkbox" value="ยาเสริมสมรรถภาพทางเพศ" onchange="updateMS('riskType')"> ยาเสริมสมรรถภาพทางเพศ</label>
+              <label class="ms-option"><input type="checkbox" value="โบท็อกซ์" onchange="updateMS('riskType')"> โบท็อกซ์</label>
+              <label class="ms-option"><input type="checkbox" value="ยาปลอม" onchange="updateMS('riskType')"> ยาปลอม</label>
+              <label class="ms-option"><input type="checkbox" value="ยาไม่มีทะเบียน" onchange="updateMS('riskType')"> ยาไม่มีทะเบียน</label>
+              <div class="ms-group-label">🟠 อาหาร</div>
+              <label class="ms-option"><input type="checkbox" value="อาหารลดน้ำหนัก/ความอ้วน" onchange="updateMS('riskType')"> อาหารลดน้ำหนัก/ความอ้วน</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารผิวขาว" onchange="updateMS('riskType')"> อาหารผิวขาว</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารเสริมสมรรถภาพทางเพศ" onchange="updateMS('riskType')"> อาหารเสริมสมรรถภาพทางเพศ</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารรักษาโรค" onchange="updateMS('riskType')"> อาหารรักษาโรค</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารไม่มีเลขสารบบอาหาร" onchange="updateMS('riskType')"> อาหารไม่มีเลขสารบบอาหาร</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารไม่บริสุทธิ์" onchange="updateMS('riskType')"> อาหารไม่บริสุทธิ์</label>
+              <label class="ms-option"><input type="checkbox" value="อาหารปลอม" onchange="updateMS('riskType')"> อาหารปลอม</label>
+              <div class="ms-group-label">🟡 เครื่องสำอาง</div>
+              <label class="ms-option"><input type="checkbox" value="เครื่องสำอางใส่สารห้ามใช้" onchange="updateMS('riskType')"> เครื่องสำอางใส่สารห้ามใช้</label>
+              <label class="ms-option"><input type="checkbox" value="เครื่องสำอางใช้ผิดวัตถุประสงค์" onchange="updateMS('riskType')"> เครื่องสำอางใช้ผิดวัตถุประสงค์</label>
+              <label class="ms-option"><input type="checkbox" value="เครื่องสำอางไม่จดแจ้ง" onchange="updateMS('riskType')"> เครื่องสำอางไม่จดแจ้ง</label>
+              <label class="ms-option"><input type="checkbox" value="เครื่องสำอางปลอม" onchange="updateMS('riskType')"> เครื่องสำอางปลอม</label>
+              <div class="ms-group-label">🟢 สมุนไพร / เครื่องมือแพทย์</div>
+              <label class="ms-option"><input type="checkbox" value="สมุนไพรปลอมปนยาแผนปัจจุบัน" onchange="updateMS('riskType')"> สมุนไพรปลอมปนยาแผนปัจจุบัน</label>
+              <label class="ms-option"><input type="checkbox" value="สมุนไพรปลอม" onchange="updateMS('riskType')"> สมุนไพรปลอม</label>
+              <label class="ms-option"><input type="checkbox" value="สมุนไพรไม่ขึ้นทะเบียน" onchange="updateMS('riskType')"> สมุนไพรไม่ขึ้นทะเบียน</label>
+              <label class="ms-option"><input type="checkbox" value="ฟิลเลอร์" onchange="updateMS('riskType')"> ฟิลเลอร์</label>
+              <label class="ms-option"><input type="checkbox" value="เครื่องมือแพทย์ปลอม" onchange="updateMS('riskType')"> เครื่องมือแพทย์ปลอม</label>
+              <label class="ms-option"><input type="checkbox" value="เครื่องมือแพทย์ไม่ขึ้นทะเบียน" onchange="updateMS('riskType')"> เครื่องมือแพทย์ไม่ขึ้นทะเบียน</label>
+              <div class="ms-group-label">⚫ วัตถุอันตราย / วัตถุออกฤทธิ์ / เสพติด</div>
+              <label class="ms-option"><input type="checkbox" value="วัตถุอันตราย ชนิดที่ 1" onchange="updateMS('riskType')"> วัตถุอันตราย ชนิดที่ 1</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุอันตราย ชนิดที่ 2" onchange="updateMS('riskType')"> วัตถุอันตราย ชนิดที่ 2</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุอันตราย ชนิดที่ 3" onchange="updateMS('riskType')"> วัตถุอันตราย ชนิดที่ 3</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุอันตราย ชนิดที่ 4" onchange="updateMS('riskType')"> วัตถุอันตราย ชนิดที่ 4</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุออกฤทธิ์ในประเภท 1" onchange="updateMS('riskType')"> วัตถุออกฤทธิ์ในประเภท 1</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุออกฤทธิ์ในประเภท 2" onchange="updateMS('riskType')"> วัตถุออกฤทธิ์ในประเภท 2</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุออกฤทธิ์ในประเภท 3" onchange="updateMS('riskType')"> วัตถุออกฤทธิ์ในประเภท 3</label>
+              <label class="ms-option"><input type="checkbox" value="วัตถุออกฤทธิ์ในประเภท 4" onchange="updateMS('riskType')"> วัตถุออกฤทธิ์ในประเภท 4</label>
+              <label class="ms-option"><input type="checkbox" value="ยาเสพติด" onchange="updateMS('riskType')"> ยาเสพติด</label>
+              <label class="ms-option"><input type="checkbox" value="ปลอมลิขสิทธิ์/เครื่องหมายการค้า" onchange="updateMS('riskType')"> ปลอมลิขสิทธิ์/เครื่องหมายการค้า</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="found-products" id="foundProducts">
+        <div class="divider"></div>
+        <div class="field">
+          <label>ผลิตภัณฑ์ที่พบความผิด <span style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">เลือกได้หลายรายการ</span></label>
+          <div class="checkbox-group">
+            <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="foundprod" value="ยา"> 💊 ยา</label>
+            <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="foundprod" value="อาหาร"> 🍱 อาหาร</label>
+            <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="foundprod" value="เครื่องสำอาง"> 💄 เครื่องสำอาง</label>
+            <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="foundprod" value="เครื่องมือแพทย์"> 🩺 เครื่องมือแพทย์</label>
+            <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="foundprod" value="ผลิตภัณฑ์สมุนไพร"> 🌿 ผลิตภัณฑ์สมุนไพร</label>
+            <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="foundprod" value="วัตถุอันตราย"> ☣️ วัตถุอันตราย</label>
+            <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="foundprod" value="วัตถุออกฤทธิ์"> ⚗️ วัตถุออกฤทธิ์</label>
+          </div>
+        </div>
+      </div>
+      <!-- spacer ให้ dropdown ประเภทความเสี่ยงมีที่แสดง -->
+      <!-- padding space for riskType dropdown -->
+      <div id="riskTypespacer" style="height:0;"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: ของกลาง -->
+  <div class="section">
+    <div class="section-header"><div class="section-icon">📦</div><span class="section-title">จำนวนและมูลค่าของกลาง</span><span class="section-num">ส่วนที่ 5</span></div>
+    <div class="section-body">
+      <div class="info-note">💡 กรอกจำนวนยึดและอายัดแยกกัน ระบบจะคำนวณยอดรวมให้อัตโนมัติ</div>
+      <table class="evidence-table">
+        <thead><tr><th>ประเภท</th><th>ยึด</th><th>อายัด</th><th>รวมทั้งหมด</th></tr></thead>
+        <tbody>
+          <tr><td style="text-align:left;font-weight:600;white-space:nowrap">📦 จำนวน (รายการ)</td><td><input type="number" class="seized" data-row="items" min="0" placeholder="0" oninput="calcTotal('items')"></td><td><input type="number" class="attached" data-row="items" min="0" placeholder="0" oninput="calcTotal('items')"></td><td><input type="text" id="total_items" readonly placeholder="0"></td></tr>
+          <tr><td style="text-align:left;font-weight:600;white-space:nowrap">🔢 จำนวน (ชิ้น)</td><td><input type="number" class="seized" data-row="pieces" min="0" placeholder="0" oninput="calcTotal('pieces')"></td><td><input type="number" class="attached" data-row="pieces" min="0" placeholder="0" oninput="calcTotal('pieces')"></td><td><input type="text" id="total_pieces" readonly placeholder="0"></td></tr>
+          <tr><td style="text-align:left;font-weight:600;white-space:nowrap">💰 มูลค่า (บาท)</td><td><input type="number" class="seized" data-row="value" min="0" placeholder="0.00" step="0.01" oninput="calcTotal('value')"></td><td><input type="number" class="attached" data-row="value" min="0" placeholder="0.00" step="0.01" oninput="calcTotal('value')"></td><td><input type="text" id="total_value" readonly placeholder="0.00"></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 6: มาตราความผิด (Manual) -->
+  <div class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><span class="section-title">มาตราความผิดตาม พ.ร.บ.</span><span class="section-num">ส่วนที่ 6</span></div>
+    <div class="section-body">
+      <div class="info-note">💡 กรอกมาตราที่ใช้บ่อย ระบบจะจำไว้ — ครั้งต่อไปพิมพ์เลขมาตราแล้วเลือกได้เลย</div>
+      <div id="lawCardsContainer"></div>
+      <!-- รายการมาตราที่บันทึกสำหรับคดีนี้ -->
+      <div class="law-saved-list" id="lawSavedList">
+        <div class="law-saved-header">
+          <div class="law-saved-title">📋 มาตราที่เลือกสำหรับคดีนี้ <span id="lawSavedCount" style="background:var(--primary);color:white;border-radius:10px;padding:1px 8px;font-size:11px;">0</span></div>
+          <button class="law-saved-clear" onclick="clearAllSaved()">🗑 ล้างทั้งหมด</button>
+        </div>
+        <div id="lawSavedItems"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: การแถลงข่าว -->
+  <div class="section">
+    <div class="section-header"><div class="section-icon">📰</div><span class="section-title">การแถลงข่าว / ประชาสัมพันธ์</span><span class="section-num">ส่วนที่ 7</span></div>
+    <div class="section-body">
+      <div class="field">
+        <label>สถานะการแถลงข่าว <span class="req">*</span></label>
+        <div class="radio-group">
+          <label class="radio-option" id="opt-nopress" onclick="setPressStatus('none')"><input type="radio" name="pressStatus" value="ไม่มีการแถลงข่าว"> 🔇 ไม่มีการแถลงข่าว</label>
+          <label class="radio-option" id="opt-press" onclick="setPressStatus('press')"><input type="radio" name="pressStatus" value="มีการแถลงข่าว"> 📢 มีการแถลงข่าว</label>
+          <label class="radio-option" id="opt-pr" onclick="setPressStatus('pr')"><input type="radio" name="pressStatus" value="ทำข่าวประชาสัมพันธ์"> 📡 ทำข่าวประชาสัมพันธ์</label>
+        </div>
+      </div>
+      <div id="pressFileWrap" style="display:none;margin-top:14px">
+        <div class="field">
+          <label>แนบไฟล์ใบแถลงข่าว / ประชาสัมพันธ์ (PDF)</label>
+          <div class="file-upload" onclick="this.querySelector('input').click()">
+            <input type="file" accept=".pdf" onchange="showFileName(this,'file2name')">
+            <div class="file-upload-icon">📰</div>
+            <div class="file-upload-text"><strong>คลิกเพื่ออัพโหลด</strong> หรือลากไฟล์มาวาง</div>
+            <div class="file-upload-text" style="margin-top:2px">PDF เท่านั้น</div>
+            <div class="file-name" id="file2name"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 8: หมายเหตุ -->
+  <div class="section">
+    <div class="section-header"><div class="section-icon">📝</div><span class="section-title">หมายเหตุ</span><span class="section-num">ส่วนที่ 8</span></div>
+    <div class="section-body"><div class="field"><label>หมายเหตุเพิ่มเติม</label><textarea rows="4" placeholder="กรอกข้อความเพิ่มเติม ข้อสังเกต หรือรายละเอียดที่ต้องการบันทึก..."></textarea></div></div>
+  </div>
+
+  <div class="alert-box" id="saveAlert">⚠️ ไม่สามารถบันทึกได้ กรุณาอัพโหลดบันทึกการตรวจ (PDF) ก่อนดำเนินการต่อ</div>
+  <div class="form-actions">
+    <button class="btn btn-outline" onclick="clearInspectionForm()">🗑️ ล้างข้อมูล</button>
+    <button class="btn btn-outline" onclick="saveDraft()">💾 บันทึกร่าง</button>
+    <button class="btn btn-primary" id="saveBtn" onclick="submitForm()">✅ บันทึกข้อมูล</button>
+  </div>
+</div><!-- end page-inspection -->
+
+<!-- ========================= PAGE: ค้นหาข้อมูล ========================= -->
+<div class="page" id="page-search">
+  <div class="page-header">
+    <h2>🔎 ค้นหาข้อมูล</h2>
+    <p>ค้นหาข้อมูลการตรวจสถานประกอบการและการระงับโฆษณา</p>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><div class="section-icon">🔍</div><span class="section-title">ตัวกรองการค้นหา</span></div>
+    <div class="section-body">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="field" style="flex:0 0 auto;">
+          <label>หมวด</label>
+          <div style="display:flex;gap:8px;margin-top:4px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--primary);cursor:pointer;">
+              <input type="checkbox" id="srchCatInsp" checked onchange="doUnifiedSearch()"
+                style="width:15px;height:15px;accent-color:var(--primary);cursor:pointer;">
+              🏢 สถานประกอบการ
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ad);cursor:pointer;">
+              <input type="checkbox" id="srchCatAdc" checked onchange="doUnifiedSearch()"
+                style="width:15px;height:15px;accent-color:var(--ad);cursor:pointer;">
+              📵 ระงับโฆษณา
+            </label>
+          </div>
+        </div>
+        <div class="field" style="flex:1;min-width:280px;">
+          <label>คำค้นหา</label>
+          <input type="text" id="srchUnified"
+            placeholder="รหัสบันทึก / ชื่อร้าน / ผลิตภัณฑ์ / เลขหนังสือระงับโฆษณา..."
+            onkeydown="if(event.key==='Enter')doUnifiedSearch()"
+            style="font-family:'Sarabun',sans-serif;font-size:13px;padding:9px 13px;border:1.5px solid var(--border);border-radius:var(--radius);outline:none;width:100%;"
+            onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <button onclick="doUnifiedSearch()" class="search-btn">🔍 ค้นหา</button>
+        <button onclick="document.getElementById('srchUnified').value='';doUnifiedSearch()"
+          style="padding:9px 16px;background:var(--surface2);color:var(--text-muted);border:1.5px solid var(--border);border-radius:var(--radius);font-family:'Sarabun',sans-serif;font-size:13px;cursor:pointer;">
+          แสดงทั้งหมด
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><div class="section-icon">📋</div><span class="section-title">ผลการค้นหา</span><span class="section-num" id="resultCount">0 รายการ</span></div>
+    <div class="section-body" style="padding:0">
+      <div id="searchResults">
+        <div class="empty-state"><div class="empty-icon">🔍</div><p>กดปุ่ม <strong>ค้นหา</strong> หรือ <strong>แสดงทั้งหมด</strong></p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================= PAGE: การระงับโฆษณา ========================= -->
+<div class="page" id="page-ad">
+  <div class="page-header">
+    <h2 style="color:var(--ad)">📵 การระงับโฆษณา</h2>
+    <p>บันทึกข้อมูลการดำเนินการระงับโฆษณาผลิตภัณฑ์สุขภาพผิดกฎหมาย</p>
+  </div>
+
+  <div class="section">
+    <div class="section-header ad-header"><div class="section-icon">📋</div><span class="section-title">ข้อมูลทั่วไปการระงับโฆษณา</span><span class="section-num">ส่วนที่ 1</span></div>
+    <div class="section-body">
+      <div class="grid g4">
+        <div class="field"><label>ปีงบประมาณ <span class="req">*</span></label><select id="adFiscalYear" onchange="updateAdId()"><option value="">-- เลือกปี --</option></select></div>
+        <div class="field"><label>วันที่พบโฆษณา <span class="req">*</span></label><input type="date"></div>
+        <div class="field"><label>ต้นเรื่อง</label>
+          <select><option value="">-- เลือก --</option><option>เรื่องร้องเรียน</option><option>เฝ้าระวัง</option></select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header ad-header"><div class="section-icon">⚡</div><span class="section-title">การดำเนินการระงับโฆษณา</span><span class="section-num">ส่วนที่ 2</span></div>
+    <div class="section-body">
+      <div id="adLetterList" style="display:flex;flex-direction:column;gap:12px;"></div>
+      <button onclick="addAdLetter()"
+        style="margin-top:10px;padding:8px 18px;background:white;color:var(--ad);border:1.5px solid var(--ad);border-radius:var(--radius);font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+        ➕ เพิ่มหนังสือ
+      </button>
+      <div class="field" style="margin-top:14px">
+        <label>แนบไฟล์สำนวน (PDF)</label>
+        <div class="file-upload" onclick="this.querySelector('input').click()">
+          <input type="file" accept=".pdf" onchange="showFileName(this,'adCaseFile')">
+          <div class="file-upload-icon">📄</div>
+          <div class="file-upload-text"><strong>คลิกเพื่ออัพโหลด</strong> ไฟล์สำนวน</div>
+          <div class="file-upload-text" style="margin-top:2px">PDF เท่านั้น</div>
+          <div class="file-name" id="adCaseFile"></div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:14px">
+        <label>ลิงก์เอกสารออนไลน์ (URL)</label>
+        <input type="url" id="adCaseUrl" placeholder="https://drive.google.com/... หรือลิงก์เอกสารที่เกี่ยวข้อง"
+          style="font-family:'Sarabun',sans-serif;">
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header ad-header"><div class="section-icon">⚖️</div><span class="section-title">ฐานข้อมูลกฎหมายโฆษณา</span><span class="section-num">ส่วนที่ 3</span></div>
+    <div class="section-body">
+      <div class="info-note">💡 บันทึกมาตราที่ใช้บ่อยเพื่อเรียกใช้ในหนังสือแต่ละฉบับได้เร็วขึ้น</div>
+      <div id="adLawCardsContainer"></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header ad-header"><div class="section-icon">📝</div><span class="section-title">หมายเหตุ</span><span class="section-num">ส่วนที่ 4</span></div>
+    <div class="section-body"><div class="field"><label>หมายเหตุเพิ่มเติม</label><textarea rows="3" placeholder="ข้อสังเกต หรือรายละเอียดเพิ่มเติม..."></textarea></div></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-outline" onclick="clearAdForm()">🗑️ ล้างข้อมูล</button>
+    <button class="btn btn-outline" onclick="saveDraftAd()">💾 บันทึกร่าง</button>
+    <button class="btn btn-primary" style="background:linear-gradient(135deg,#5B1E9C,var(--ad))" onclick="submitAdForm()">✅ บันทึกข้อมูล</button>
+  </div>
+</div>
+
+<!-- ========================= PAGE: ระบบผลวิเคราะห์ ========================= -->
+<div class="page" id="page-lab">
+  <div class="page-header">
+    <h2 style="color:#0D7C3A;">🧪 ระบบผลวิเคราะห์</h2>
+    <p>บันทึกข้อมูลการส่งตัวอย่างผลิตภัณฑ์เพื่อวิเคราะห์</p>
+  </div>
+
+  <!-- ค้นหาเพื่ออัปเดตผล -->
+  <div class="section">
+    <div class="section-header" style="background:linear-gradient(135deg,#0D7C3A,#16A058);"><div class="section-icon">🔍</div><span class="section-title">ค้นหาและอัปเดตผลวิเคราะห์</span></div>
+    <div class="section-body">
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div class="field" style="flex:1;">
+          <label>ค้นหาจากรหัสบันทึก / ชื่อสถานที่ / ชื่อร้านค้า</label>
+          <input type="text" id="labSearchQ" placeholder="เช่น LAB-69-001, ร้านขายยา, shopee123..."
+            onkeydown="if(event.key==='Enter')doLabSearch()"
+            style="font-family:'Sarabun',sans-serif;">
+        </div>
+        <button onclick="doLabSearch()" class="search-btn" style="background:#0D7C3A;">🔍 ค้นหา</button>
+        <button onclick="doLabSearch('all')" style="padding:9px 14px;background:var(--surface2);color:var(--text-muted);border:1.5px solid var(--border);border-radius:var(--radius);font-family:'Sarabun',sans-serif;font-size:13px;cursor:pointer;">แสดงทั้งหมด</button>
+      </div>
+      <div id="labSearchResults" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- ส่วนที่ 1: ข้อมูลทั่วไป -->
+  <div class="section">
+    <div class="section-header" style="background:linear-gradient(135deg,#0D7C3A,#16A058);"><div class="section-icon">📋</div><span class="section-title">ข้อมูลทั่วไป</span><span class="section-num">ส่วนที่ 1</span></div>
+    <div class="section-body">
+      <div class="grid g4">
+        <div class="field">
+          <label>ปีงบประมาณ</label>
+          <select id="labFiscalYear">
+            <option value="2569">2569</option><option value="2570">2570</option><option value="2571">2571</option>
+            <option value="2572">2572</option><option value="2573">2573</option><option value="2574">2574</option>
+            <option value="2575">2575</option><option value="2576">2576</option><option value="2577">2577</option>
+            <option value="2578">2578</option><option value="2579">2579</option><option value="2580">2580</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>วันที่เก็บตัวอย่าง</label>
+          <input type="date" id="labSampleDate" onchange="autoFillLabQuarter()">
+        </div>
+        <div class="field">
+          <label>ไตรมาส</label>
+          <select id="labQuarter">
+            <option value="1">ไตรมาสที่ 1 (ต.ค. – ธ.ค.)</option>
+            <option value="2">ไตรมาสที่ 2 (ม.ค. – มี.ค.)</option>
+            <option value="3">ไตรมาสที่ 3 (เม.ย. – มิ.ย.)</option>
+            <option value="4">ไตรมาสที่ 4 (ก.ค. – ก.ย.)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ประเภทสถานที่</label>
+          <select id="labPlaceType">
+            <option value="">-- เลือก --</option>
+            <option>ผลิต</option><option>นำเข้า</option><option>จำหน่าย</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- เก็บตัวอย่างจาก -->
+      <div class="field" style="margin-top:14px;">
+        <label>เก็บตัวอย่างจาก <span style="font-weight:400;font-size:10px;">เลือกได้หลายรายการ</span></label>
+        <div class="checkbox-group" id="labFromGroup">
+          <label class="checkbox-item" onclick="toggleCheck(this);toggleLabFrom()"><input type="checkbox" value="สถานที่"> 🏢 สถานที่</label>
+          <label class="checkbox-item" onclick="toggleCheck(this);toggleLabFrom()"><input type="checkbox" value="URL/ลิงก์"> 🔗 URL / ลิงก์</label>
+        </div>
+        <div id="labFromExtra" style="margin-top:10px;display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+
+      <!-- หน่วยงานที่ส่ง -->
+      <div class="field" style="margin-top:14px;">
+        <label>หน่วยงานที่ส่ง <span style="font-weight:400;font-size:10px;">เลือกได้หลายรายการ</span></label>
+        <div class="checkbox-group" id="labAgencyGroup">
+          <label class="checkbox-item" onclick="toggleCheck(this);toggleLabAgency()"><input type="checkbox" value="ศรป."> ศรป.</label>
+          <label class="checkbox-item" onclick="toggleCheck(this);toggleLabAgency()"><input type="checkbox" value="ปคบ."> ปคบ.</label>
+          <label class="checkbox-item" onclick="toggleCheck(this);toggleLabAgency()"><input type="checkbox" value="สสจ."> สสจ.</label>
+          <label class="checkbox-item" onclick="toggleCheck(this);toggleLabAgency()"><input type="checkbox" value="อื่นๆ"> อื่นๆ</label>
+        </div>
+        <div id="labAgencyExtra" style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- หนังสือส่ง -->
+      <div class="grid g3" style="margin-top:14px;">
+        <div class="field span2" style="grid-column:span 2;">
+          <label>เลขที่หนังสือ (ต้นเรื่อง)</label>
+          <input type="text" id="labLetterNo" placeholder="เลขที่หนังสือ">
+        </div>
+        <div class="field">
+          <label>ลงวันที่</label>
+          <input type="date" id="labLetterDate">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ส่วนที่ 2: ข้อมูลผลิตภัณฑ์ (dynamic) -->
+  <div class="section">
+    <div class="section-header" style="background:linear-gradient(135deg,#0D7C3A,#16A058);">
+      <div class="section-icon">💊</div><span class="section-title">ข้อมูลผลิตภัณฑ์</span><span class="section-num">ส่วนที่ 2</span>
+    </div>
+    <div class="section-body">
+      <div id="labProductList" style="display:flex;flex-direction:column;gap:14px;"></div>
+      <button onclick="addLabProduct()"
+        style="margin-top:10px;padding:8px 18px;background:white;color:#0D7C3A;border:1.5px solid #0D7C3A;border-radius:var(--radius);font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">
+        ➕ เพิ่มข้อมูลผลิตภัณฑ์
+      </button>
+    </div>
+  </div>
+
+  <!-- ส่วนที่ 3: วิเคราะห์หา (DB-based) -->
+  <div class="section">
+    <div class="section-header" style="background:linear-gradient(135deg,#0D7C3A,#16A058);">
+      <div class="section-icon">🔬</div><span class="section-title">วิเคราะห์หา</span><span class="section-num">ส่วนที่ 3</span>
+    </div>
+    <div class="section-body">
+      <div class="info-note" style="background:#E8F5EE;border-color:#90CFA8;color:#0D7C3A;">
+        💡 เลือกสารที่ต้องการวิเคราะห์ <span id="labAnalyteCount" style="font-weight:800;">0 รายการ</span>
+      </div>
+      <div id="labAnalyteCardsContainer" style="margin-top:12px;"></div>
+      <div class="law-saved-list" id="labAnalyteSavedList" style="display:none;">
+        <div class="law-saved-header">
+          <div class="law-saved-title">🔬 สารที่เลือกวิเคราะห์ <span id="labAnalyteSavedCount" style="background:#0D7C3A;color:white;border-radius:10px;padding:1px 8px;font-size:11px;">0</span></div>
+          <button class="law-saved-clear" onclick="clearLabAnalytes()">🗑 ล้างทั้งหมด</button>
+        </div>
+        <div id="labAnalyteSavedItems"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ส่วนที่ 4: ส่งวิเคราะห์ (dynamic) -->
+  <div class="section">
+    <div class="section-header" style="background:linear-gradient(135deg,#0D7C3A,#16A058);">
+      <div class="section-icon">📨</div><span class="section-title">ส่งวิเคราะห์</span><span class="section-num">ส่วนที่ 4</span>
+    </div>
+    <div class="section-body">
+      <div id="labSendList" style="display:flex;flex-direction:column;gap:12px;"></div>
+      <button onclick="addLabSend()"
+        style="margin-top:10px;padding:8px 18px;background:white;color:#0D7C3A;border:1.5px solid #0D7C3A;border-radius:var(--radius);font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">
+        ➕ เพิ่มหนังสือส่งวิเคราะห์
+      </button>
+    </div>
+  </div>
+
+  <!-- ส่วนที่ 5: ผลวิเคราะห์ (dynamic) -->
+  <div class="section">
+    <div class="section-header" style="background:linear-gradient(135deg,#0D7C3A,#16A058);">
+      <div class="section-icon">📊</div><span class="section-title">ผลวิเคราะห์</span><span class="section-num">ส่วนที่ 5</span>
+    </div>
+    <div class="section-body">
+      <div id="labResultList" style="display:flex;flex-direction:column;gap:12px;"></div>
+      <button onclick="addLabResult()"
+        style="margin-top:10px;padding:8px 18px;background:white;color:#0D7C3A;border:1.5px solid #0D7C3A;border-radius:var(--radius);font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">
+        ➕ เพิ่มรายงานผลวิเคราะห์
+      </button>
+      <div class="field" style="margin-top:14px;">
+        <label>หมายเหตุ</label>
+        <textarea id="labNote" rows="2" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn-outline" onclick="clearLabForm()">🗑️ ล้างข้อมูล</button>
+    <button class="btn btn-primary" style="background:linear-gradient(135deg,#0D7C3A,#16A058);" onclick="submitLabForm()">✅ บันทึกข้อมูล</button>
+  </div>
+</div>
+
+<!-- ========================= PAGE: ตั้งค่าระบบ ========================= -->
+<div class="page" id="page-settings">
+  <div class="page-header">
+    <h2>⚙️ ตั้งค่าระบบ</h2>
+    <p>ปรับแต่งการตั้งค่าระบบและข้อมูลพื้นฐาน</p>
+  </div>
+
+  <!-- API Key Section -->
+  <div class="section">
+    <div class="section-header"><div class="section-icon">🔑</div><span class="section-title">Anthropic API Key</span><span id="apikeyStatusBadge" class="section-num" style="background:rgba(255,255,255,.15);padding:2px 10px;border-radius:10px;font-size:11px;">ยังไม่ได้ตั้งค่า</span></div>
+    <div class="section-body">
+      <div class="info-note">💡 API Key ใช้สำหรับค้นหาเนื้อหามาตรากฎหมายอัตโนมัติ — เก็บใน browser ของเครื่องนี้เท่านั้น ไม่ได้ส่งไปที่อื่น</div>
+      <div class="field">
+        <label>Anthropic API Key</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="password" id="apikeyInput" placeholder="sk-ant-api03-..." oninput="saveApiKey(this.value)"
+            style="flex:1;font-family:monospace;letter-spacing:.05em;">
+          <button onclick="toggleKeyVisibility()" id="toggleKeyBtn"
+            style="padding:9px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);cursor:pointer;font-size:14px;flex-shrink:0;">👁</button>
+          <button onclick="clearApiKey()"
+            style="padding:9px 14px;border:1.5px solid #FFD0D0;border-radius:var(--radius);background:#FFF5F5;color:var(--accent);cursor:pointer;font-size:13px;font-weight:700;flex-shrink:0;">ลบ</button>
+        </div>
+        <div id="apikeyStatus" style="font-size:12px;margin-top:6px;font-weight:600;"></div>
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--text-muted);line-height:1.8;">
+        รับ API Key ได้ที่ <a href="https://console.anthropic.com" target="_blank" style="color:var(--primary);font-weight:600;">console.anthropic.com</a> → Settings → API Keys → Create Key
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF Upload Section -->
+  <div class="section">
+    <div class="section-header"><div class="section-icon">📄</div><span class="section-title">อัพโหลด พ.ร.บ. (PDF) สำหรับค้นหามาตรา</span><span class="section-num" style="font-size:11px;opacity:.8">ค้นหาฟรี ไม่ใช้ API</span></div>
+    <div class="section-body">
+      <div class="info-note">💡 อัพโหลด PDF หรือ HTML ของแต่ละ พ.ร.บ. ระบบจะค้นหามาตราจากไฟล์โดยตรง ฟรี 100% ไม่ใช้ token<br>
+      📄 <strong>HTML</strong> จาก krisdika.go.th / law.go.th แนะนำที่สุด — แม่นยำกว่า<br>
+      📑 <strong>PDF</strong> ต้องเป็นแบบ text (ไม่ใช่ scan) จึงจะ extract ได้</div>
+      <div id="pdfUploadList" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><span class="section-title">ข้อมูลหน่วยงาน</span></div>
+    <div class="section-body">
+      <div class="grid g2">
+        <div class="field"><label>ชื่อหน่วยงาน</label><input type="text" value="ฝ่ายปราบปราม ศรป."></div>
+        <div class="field"><label>รหัสหน่วยงาน</label><input type="text" value="MOPH-FDA-ENF"></div>
+      </div>
+      <div class="grid g2" style="margin-top:14px">
+        <div class="field"><label>ปีงบประมาณปัจจุบัน</label><input type="text" value="2569"></div>
+        <div class="field"><label>รหัสเริ่มต้น</label><input type="text" value="INS-2569-0001"></div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header"><div class="section-icon">📊</div><span class="section-title">สถิติการใช้งาน</span></div>
+    <div class="section-body">
+      <div class="grid g4">
+        <div style="background:linear-gradient(135deg,#EEF2FF,#E8EEFF);border-radius:12px;padding:18px;text-align:center;">
+          <div style="font-size:28px;font-weight:800;color:var(--primary)" id="stat-insp">0</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">บันทึกการตรวจ</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#FFF0F0,#FFE8E8);border-radius:12px;padding:18px;text-align:center;">
+          <div style="font-size:28px;font-weight:800;color:var(--accent)" id="stat-found">0</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">พบความผิด</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#E8F5EE,#D8F0E5);border-radius:12px;padding:18px;text-align:center;">
+          <div style="font-size:28px;font-weight:800;color:var(--success)" id="stat-clear">0</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">ไม่พบความผิด</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#F5EEFF,#EDE0FF);border-radius:12px;padding:18px;text-align:center;">
+          <div style="font-size:28px;font-weight:800;color:var(--ad)" id="stat-ad">0</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">ระงับโฆษณา</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main -->
+</div><!-- end mainApp -->
+<?!= include("javascript"); ?>
+</body>
+</html>
